@@ -1,0 +1,8 @@
+#!/bin/bash
+xrdb $HOME/.Xresources
+
+# disable screen blanking
+xset s off
+xset s noblank
+
+startlxde &LD

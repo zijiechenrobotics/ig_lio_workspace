@@ -1,0 +1,19 @@
+version: '3.4'
+services:
+  ig-lio-workspace:
+    build:
+      context: .
+    image: zijiechenrobotic/ig-lio-workspace:latest
+    environment:
+      - VNC_PW=abc123 # user defined password
+      - VNC_GEOMETRY=1280x720 # vnc resolution
+      - VNC_DEPTH=24
+    volumes:
+      # 
+      - ./workspace:/root/workspace
+      - /media/czj2020/LSLAM/lidar_dataset:/root/lidar_dataset
+    ports:
+      # noVNC port:
+      - 46080:6080
+      # standard VNC port:
+      - 45901:5901
