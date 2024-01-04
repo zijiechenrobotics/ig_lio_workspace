@@ -1,8 +1,15 @@
 # ig_lio_workspace
 
-This Docker is a standard development environment for [iG-LIO](https://github.com/zijiechenrobotics/ig_lio), which helps you quickly experience iG-LIO. The Docker is visualized via [VNC](https://github.com/TigerVNC/tigervnc) and [noVNC](https://github.com/novnc/noVNC), allowing users to see the trajectory and mapping in real time.
+This Docker is a standard development environment for [iG-LIO](https://github.com/zijiechenrobotics/ig_lio), which helps you quickly experience iG-LIO. The Docker is visualized via [VNC](https://github.com/TigerVNC/tigervnc), [noVNC](https://github.com/novnc/noVNC), and Xserver, allowing users to see the trajectory and mapping in real time.
 
-Since Docker utilizes the CPU to render frames, RViz may experience delays when visualizing dense point clouds. **It is advisable to use `sparse_map(docker)` to visualize the global map in RViz.**  If you want to visualize the dense map, it is recommended that you run iG-LIO on the local machine.
+|                Supported scheme                 | Viusal manner |
+| :---------------------------------------------: | :-----------: |
+| Ubuntu (any version) with GPU **(recommended)** |    Xserver    |
+|               Ubuntu without GPU                | VNC or noVNC  |
+|                Windows with GPU                 |    Xserver    |
+|               Windows without GPU               | VNC or noVNC  |
+
+Since Docker utilizes the CPU to render frames in VNC, RViz may experience delays when visualizing dense point clouds. **It is advisable to use `sparse_map(VNC)` to visualize the global map in RViz.**
 
 ![run](figure/run.gif)
 
@@ -11,13 +18,14 @@ Since Docker utilizes the CPU to render frames, RViz may experience delays when 
 
 Please install Docker following the links. This Docker supports both Ubuntu and Windows.
 
-- Ubuntu: https://docs.docker.com/engine/install/ubuntu/
-- Windows: https://docs.docker.com/desktop/install/windows-install/
+- Ubuntu: install [Docker engine](https://docs.docker.com/engine/install/ubuntu/) and [nvidia-docker](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html).
+- Windows (without GPU): If you plan to visualize in VNC, just install [Docker desktop](https://docs.docker.com/desktop/install/windows-install/). 
+- WIndows (with GPU): If you want to GPU acceleration, you should install docker engine in `WSL2`, and then install `NVIDIA Container Toolkit` on `WSL2`. It is recommended that follow this [tutorial](https://www.youtube.com/watch?v=CO43b6XWHNI).
 
 ### 1.2 Pull Container
 
 ```bash
-docker push zijiechenrobotic/ig-lio-workspace:latest
+docker pull zijiechenrobotic/ig-lio-workspace:latest
 
 # for Chinese mainland
 docker pull registry.cn-guangzhou.aliyuncs.com/zijiechenrobotics/ig-lio-workspace:latest
@@ -29,9 +37,84 @@ If you are not interested in the Docker's source code, **you do not need to git 
 
 ![file](figure/file.png)
 
+```bash
+# the "lidar_dataset" folder is used to store the datasets
+
+# download iG-LIO source code
+cd workspace
+git clone https://github.com/zijiechenrobotics/ig_lio_workspace.git
+git clone https://github.com/Livox-SDK/livox_ros_driver
+```
+
+#### 1.3.1 Launch Container in Ubuntu with GPU (recommend)
+
 Enter the below contents in the `docker-compose.yml`
 
 ```yaml
+version: '3.4'
+services:
+  ig-lio-workspace:
+    build:
+      context: .
+    image: zijiechenrobotic/ig-lio-workspace:latest
+    # or
+    # registry.cn-guangzhou.aliyuncs.com/zijiechenrobotics/ig-lio-workspace:latest
+    environment:
+      - DISPLAY=$DISPLAY
+      - QT_X11_NO_MITSHM=1
+      - NVIDIA_DRIVER_CAPABILITIES=all
+      - NVIDIA_VISIBLE_DEVICES=all
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [ gpu ]
+    volumes:
+      # Map ig-lio source code to Docker (please change to your own path)
+      - <your workspace folder path>:/root/workspace
+      # Map datasets to Docker (Please change to your own path)
+      - <your lidar_dataset folder path>:/root/lidar_dataset
+      - /tmp/.X11-unix:/tmp/.X11-unix:rw
+```
+
+Launch container
+
+```bash
+# cd to ig_lio_workspace
+docker compose up -d
+```
+
+Shut down container
+
+```bash
+# cd to ig_lio_workspace
+docker compose down
+```
+
+**Access Container**
+
+```bash
+# enter below command in the local terminal (necessary)
+xhost +local:root
+
+# access container
+docker exec -it <containter id> bash
+
+# check opengl is rendered by GPU
+inxi -G
+# output-> OpenGL: renderer: <your GPU namae> instead of llvmpipe
+```
+
+
+#### 1.3.2 Launch Container in Windows with GPU
+
+Coming soon...
+
+#### 1.3.3 Launch Containter with VNC
+
+```bash
 version: '3.4'
 services:
   ig-lio-workspace:
@@ -46,9 +129,9 @@ services:
       - VNC_DEPTH=24 # 16/24/32
     volumes:
       # Map ig-lio source code to Docker (please change to your own path)
-      - ./workspace:/root/workspace
+      - <your workspace folder path>:/root/workspace
       # Map datasets to Docker (Please change to your own path)
-      - /media/czj2020/LSLAM/lidar_dataset:/root/lidar_dataset
+      - <your lidar_dataset folder path>:/root/lidar_dataset
     ports:
       # noVNC port:
       - 46080:6080
@@ -59,18 +142,18 @@ services:
 Launch container
 
 ```bash
+# cd to ig_lio_workspace
 docker compose up -d
 ```
 
 Shut down container
 
 ```bash
+# cd to ig_lio_workspace
 docker compose down
 ```
 
-### 1.4 Access Container
-
-#### 1.4.1 Access via VNC
+**Access via VNC**
 
 Enter the following address to access Docker via any VNC viewer ( recommend Windows uses MobaXterm and Ubuntu uses Remmina)
 
@@ -78,7 +161,7 @@ Enter the following address to access Docker via any VNC viewer ( recommend Wind
 localhost:45901
 ```
 
-#### 1.4.2 Access via noVNC (recommend)
+**Access via noVNC (recommend)**
 
 Any browser, enter the following address in the address bar
 
@@ -91,18 +174,19 @@ localhost:46080/vnc.html
 ### 1.5 Run
 
 ```bash
-# launch the terminator in desktop
+# build iG-LIO
 cd /root/workspace/ig_lio
 catkin_make
 
-# launch ig_lio
+# launch iG-LIO
 source devel/setup.bash
 roslaunch ig_lio lio_<dataset name>.launch
 ```
 
 Since we have mapped the datasets to the `lidar_dataset`, we can play the datasets inside Docker
 
-```
+```bash
+# open another terminal
 cd /root/lidar_dataset
 rosbag play <dataset name>
 ```
@@ -110,7 +194,7 @@ rosbag play <dataset name>
 ## Docker Environment
 
 ```
-base: ubuntu 20.04
+base: nvidia/opengl:1.0-glvnd-runtime-ubuntu20.04
 ROS noetic
 evo
 gcc9 & g++9

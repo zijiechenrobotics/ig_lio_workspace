@@ -1,19 +1,51 @@
+# GPU
 version: '3.4'
 services:
   ig-lio-workspace:
     build:
       context: .
     image: zijiechenrobotic/ig-lio-workspace:latest
+    # or
+    # registry.cn-guangzhou.aliyuncs.com/zijiechenrobotics/ig-lio-workspace:latest
     environment:
-      - VNC_PW=abc123 # user defined password
-      - VNC_GEOMETRY=1280x720 # vnc resolution
-      - VNC_DEPTH=24
+      - DISPLAY=$DISPLAY
+      - QT_X11_NO_MITSHM=1
+      - NVIDIA_DRIVER_CAPABILITIES=all
+      - NVIDIA_VISIBLE_DEVICES=all
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [ gpu ]
     volumes:
-      # 
-      - ./workspace:/root/workspace
-      - /media/czj2020/LSLAM/lidar_dataset:/root/lidar_dataset
-    ports:
-      # noVNC port:
-      - 46080:6080
-      # standard VNC port:
-      - 45901:5901
+      # Map ig-lio source code to Docker (please change to your own path)
+      - <your workspace folder path>:/root/workspace
+      # Map datasets to Docker (Please change to your own path)
+      - <your lidar_dataset folder path>:/root/lidar_dataset
+      - /tmp/.X11-unix:/tmp/.X11-unix:rw
+
+# VNC
+# version: '3.4'
+# services:
+#   ig-lio-workspace:
+#     build:
+#       context: .
+#     image: zijiechenrobotic/ig-lio-workspace:latest
+#     # or 
+#     # registry.cn-guangzhou.aliyuncs.com/zijiechenrobotics/ig-lio-workspace:latest
+#     environment:
+#       - VNC_PW=abc123 # user defined password
+#       - VNC_GEOMETRY=1280x720 # vnc resolution
+#       - VNC_DEPTH=24 # 16/24/32
+#     volumes:
+#       # Map ig-lio source code to Docker (please change to your own path)
+#       - <your workspace folder path>:/root/workspace
+#       # Map datasets to Docker (Please change to your own path)
+#       - <your lidar_dataset folder path>:/root/lidar_dataset
+#     ports:
+#       # noVNC port:
+#       - 46080:6080
+#       # standard VNC port:
+#       - 45901:5901
