@@ -42,8 +42,8 @@ If you are not interested in the Docker's source code, **you do not need to git 
 
 # download iG-LIO source code
 cd workspace
-git clone https://github.com/zijiechenrobotics/ig_lio_workspace.git
-git clone https://github.com/Livox-SDK/livox_ros_driver
+git clone https://github.com/zijiechenrobotics/ig_lio.git
+git clone https://github.com/Livox-SDK/livox_ros_driver.git
 ```
 
 #### 1.3.1 Launch Container in Ubuntu with GPU (recommend)
